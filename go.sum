@@ -1,4 +1,5 @@
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/moonfruit/go-shabal v0.0.0-20190704132617-8cd17efc8c99 h1:kxuxLQBbQhpy3xvRjzTE6FQmRFwffj3U/v/xqRDZ8hI=
 github.com/moonfruit/go-shabal v0.0.0-20190704132617-8cd17efc8c99/go.mod h1:dzGQ9Am69WM2fyDgy1Us6eOB4nyxMJ8aSiHvCFlDqCE=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

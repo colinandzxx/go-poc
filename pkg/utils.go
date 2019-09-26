@@ -1,60 +1,110 @@
 package pkg
 
 import (
-	"encoding/binary"
+	"encoding/hex"
 	"fmt"
-	"github.com/moonfruit/go-shabal"
-	"math/big"
+	"reflect"
 )
 
-func calculateGenerationSignature(lastGenSig [32]byte , lastGenId uint64) []byte {
-	data := make([]byte, 40)
-	copy(data, lastGenSig[:])
-	// use BigEndian in burst code !
-	binary.BigEndian.PutUint64(data[32:], lastGenId)
-	s256 := shabal.NewShabal256()
-	_, err := s256.Write(data)
-	if err != nil {
-		panic(fmt.Errorf("%v", err))
-	}
-	return s256.Sum(nil)
+const uintBits = 32 << (uint64(^uint(0)) >> 63)
+
+// Encode encodes b as a hex string with 0x prefix.
+func HexEncode(b []byte) string {
+	enc := make([]byte, len(b)*2+2)
+	copy(enc, "0x")
+	hex.Encode(enc[2:], b)
+	return string(enc)
 }
 
-func calculateScoop(genSig [32]byte, height uint64) uint64 {
-	data := make([]byte, 40)
-	copy(data, genSig[:])
-	// use BigEndian in burst code !
-	binary.BigEndian.PutUint64(data[32:], height)
-	s256 := shabal.NewShabal256()
-	_, err := s256.Write(data)
-	if err != nil {
-		panic(fmt.Errorf("%v", err))
-	}
-
-	scoopBig := big.Int{}
-	scoopBig.SetBytes(s256.Sum(nil))
-	scoopBig.Mod(&scoopBig, big.NewInt(int64(scoopsPerPlot)))
-	return scoopBig.Uint64()
+func isString(input []byte) bool {
+	return len(input) >= 2 && input[0] == '"' && input[len(input)-1] == '"'
 }
 
-	func calculateHit(genSig [32]byte, scoopData []byte) *big.Int {
-	s256 := shabal.NewShabal256()
-	_, err := s256.Write(genSig[:])
-	if err != nil {
-		panic(fmt.Errorf("%v", err))
-	}
-	_, err = s256.Write(scoopData)
-	if err != nil {
-		panic(fmt.Errorf("%v", err))
-	}
-
-	hitBig := big.NewInt(0)
-	hitBytes := s256.Sum(nil)
-	hitBig.SetBytes([]byte{hitBytes[7], hitBytes[6], hitBytes[5], hitBytes[5], hitBytes[3], hitBytes[2], hitBytes[1], hitBytes[0]})
-	return hitBig
+func bytesHave0xPrefix(input []byte) bool {
+	return len(input) >= 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X')
 }
 
-func calculateDeadline(genSig [32]byte, scoopData []byte, baseTarget uint64) *big.Int {
-	hit := calculateHit(genSig, scoopData)
-	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+func preProcHexText(input []byte, wantPrefix bool) ([]byte, error) {
+	if len(input) == 0 {
+		return nil, nil // empty strings are allowed
+	}
+	if bytesHave0xPrefix(input) {
+		input = input[2:]
+	} else if wantPrefix {
+		return nil, ErrMissingPrefix
+	}
+	if len(input)%2 != 0 {
+		return nil, ErrOddLength
+	}
+	return input, nil
+}
+
+func preProcNumberText(input []byte) (raw []byte, err error) {
+	if len(input) == 0 {
+		return nil, nil // empty strings are allowed
+	}
+	if !bytesHave0xPrefix(input) {
+		return nil, ErrMissingPrefix
+	}
+	input = input[2:]
+	if len(input) == 0 {
+		return nil, ErrEmptyNumber
+	}
+	if len(input) > 1 && input[0] == '0' {
+		return nil, ErrLeadingZero
+	}
+	return input, nil
+}
+
+const badNibble = ^uint64(0)
+func decodeHexNibble(in byte) uint64 {
+	switch {
+	case in >= '0' && in <= '9':
+		return uint64(in - '0')
+	case in >= 'A' && in <= 'F':
+		return uint64(in - 'A' + 10)
+	case in >= 'a' && in <= 'f':
+		return uint64(in - 'a' + 10)
+	default:
+		return badNibble
+	}
+}
+
+// UnmarshalFixedJSON decodes the input as a string with 0x prefix. The length of out
+// determines the required input length. This function is commonly used to implement the
+// UnmarshalJSON method for fixed-size types.
+func unmarshalFixedJSON(typ reflect.Type, input, out []byte) error {
+	if !isString(input) {
+		return errNonString(typ)
+	}
+	return wrapTypeError(unmarshalFixedText(typ.String(), input[1:len(input)-1], out), typ)
+}
+
+// UnmarshalFixedText decodes the input as a string with 0x prefix. The length of out
+// determines the required input length. This function is commonly used to implement the
+// UnmarshalText method for fixed-size types.
+func unmarshalFixedText(typname string, input, out []byte) error {
+	raw, err := preProcHexText(input, true)
+	if err != nil {
+		return err
+	}
+	if len(raw)/2 != len(out) {
+		return fmt.Errorf("hex string has length %d, want %d for %s", len(raw), len(out)*2, typname)
+	}
+	// Pre-verify syntax before modifying out.
+	for _, b := range raw {
+		if decodeHexNibble(b) == badNibble {
+			return ErrSyntax
+		}
+	}
+	hex.Decode(out, raw)
+	return nil
+}
+
+// for implements encoding.TextMarshaler
+func marshalText(b []byte) ([]byte, error) {
+	result := make([]byte, len(b)*2+2)
+	copy(result, `0x`)
+	hex.Encode(result[2:], b[:])
+	return result, nil
 }
