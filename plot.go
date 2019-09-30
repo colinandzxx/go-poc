@@ -1,4 +1,4 @@
-package pkg
+package poc
 
 import (
 	"encoding/binary"

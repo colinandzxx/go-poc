@@ -1,9 +1,10 @@
-package pkg
+package poc
 
 import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
+	"github.com/colinandzxx/go-consensus"
 	"github.com/moonfruit/go-shabal"
 	"math/big"
 )
@@ -15,7 +16,7 @@ const maxBaseTarget = uint64(0x444444444) // 18325193796
 var two64, _ = big.NewInt(0).SetString("18446744073709551616", 10) // 0x10000000000000000
 
 type ConsensusData struct {
-	GenerationSignature Byte32 `json: "generationSignature"`
+	GenerationSignature byte `json: "generationSignature"`
 	BaseTarget *big.Int        `json: "baseTarget"`
 	Deadline *big.Int          `json: "deadline"`
 
@@ -26,7 +27,7 @@ type Consensus struct {
 
 }
 
-func calculateGenerationSignature(lastGenSig Byte32 , lastGenId uint64) []byte {
+func calculateGenerationSignature(lastGenSig consensus.Byte32 , lastGenId uint64) []byte {
 	data := make([]byte, 40)
 	copy(data, lastGenSig[:])
 	// use BigEndian in burst code !
@@ -39,7 +40,7 @@ func calculateGenerationSignature(lastGenSig Byte32 , lastGenId uint64) []byte {
 	return s256.Sum(nil)
 }
 
-func calculateScoop(genSig Byte32, height uint64) uint64 {
+func calculateScoop(genSig consensus.Byte32, height uint64) uint64 {
 	data := make([]byte, 40)
 	copy(data, genSig[:])
 	// use BigEndian in burst code !
@@ -56,7 +57,7 @@ func calculateScoop(genSig Byte32, height uint64) uint64 {
 	return scoopBig.Uint64()
 }
 
-func calculateHit(genSig Byte32, scoopData Byte64) *big.Int {
+func calculateHit(genSig consensus.Byte32, scoopData consensus.Byte64) *big.Int {
 	s256 := shabal.NewShabal256()
 	_, err := s256.Write(genSig[:])
 	if err != nil {
@@ -73,7 +74,7 @@ func calculateHit(genSig Byte32, scoopData Byte64) *big.Int {
 	return hitBig
 }
 
-func calculateDeadline(genSig Byte32, scoopData Byte64, baseTarget uint64) *big.Int {
+func calculateDeadline(genSig consensus.Byte32, scoopData consensus.Byte64, baseTarget uint64) *big.Int {
 	hit := calculateHit(genSig, scoopData)
 	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
 }
