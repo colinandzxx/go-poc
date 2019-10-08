@@ -4,7 +4,7 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
-	"github.com/colinandzxx/go-consensus"
+	"github.com/colinandzxx/go-consensus/types"
 	"github.com/moonfruit/go-shabal"
 	"math/big"
 )
@@ -15,19 +15,11 @@ const maxBaseTarget = uint64(0x444444444) // 18325193796
 
 var two64, _ = big.NewInt(0).SetString("18446744073709551616", 10) // 0x10000000000000000
 
-type ConsensusData struct {
-	GenerationSignature byte `json: "generationSignature"`
-	BaseTarget *big.Int        `json: "baseTarget"`
-	Deadline *big.Int          `json: "deadline"`
-
-	TimeStamp  uint64
-}
-
 type Consensus struct {
 
 }
 
-func calculateGenerationSignature(lastGenSig consensus.Byte32, lastGenId uint64) consensus.Byte32 {
+func calculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) types.Byte32 {
 	data := make([]byte, 40)
 	copy(data, lastGenSig[:])
 	// use BigEndian in burst code !
@@ -37,12 +29,12 @@ func calculateGenerationSignature(lastGenSig consensus.Byte32, lastGenId uint64)
 	if err != nil {
 		panic(fmt.Errorf("%v", err))
 	}
-	var ret consensus.Byte32
+	var ret types.Byte32
 	copy(ret[:], s256.Sum(nil)[:32])
 	return ret
 }
 
-func calculateScoop(genSig consensus.Byte32, height uint64) uint64 {
+func calculateScoop(genSig types.Byte32, height uint64) uint64 {
 	data := make([]byte, 40)
 	copy(data, genSig[:])
 	// use BigEndian in burst code !
@@ -59,7 +51,7 @@ func calculateScoop(genSig consensus.Byte32, height uint64) uint64 {
 	return scoopBig.Uint64()
 }
 
-func calculateHit(genSig consensus.Byte32, scoopData consensus.Byte64) *big.Int {
+func calculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 	s256 := shabal.NewShabal256()
 	_, err := s256.Write(genSig[:])
 	if err != nil {
@@ -76,7 +68,7 @@ func calculateHit(genSig consensus.Byte32, scoopData consensus.Byte64) *big.Int 
 	return hitBig
 }
 
-func calculateDeadline(genSig consensus.Byte32, scoopData consensus.Byte64, baseTarget uint64) *big.Int {
+func calculateDeadline(genSig types.Byte32, scoopData types.Byte64, baseTarget uint64) *big.Int {
 	hit := calculateHit(genSig, scoopData)
 	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
 }
@@ -95,7 +87,7 @@ func calculateAvgBaseTarget(listConsensusData list.List) *big.Int  {
 			panic("listConsensusData can not convert to *ConsensusData")
 		}
 		avgBaseTarget = avgBaseTarget.Mul(avgBaseTarget, big.NewInt(blockCounter))
-		avgBaseTarget = avgBaseTarget.Add(avgBaseTarget, prev.BaseTarget)
+		avgBaseTarget = avgBaseTarget.Add(avgBaseTarget, prev.BaseTarget.ToInt())
 		avgBaseTarget = avgBaseTarget.Div(avgBaseTarget, big.NewInt(blockCounter + 1))
 	}
 	return avgBaseTarget
@@ -111,10 +103,10 @@ func CalculateBaseTarget(listConsensusData list.List) *big.Int  {
 	if !ok {
 		panic("listConsensusData can not convert to *ConsensusData")
 	}
-	if front.TimeStamp < back.TimeStamp {
-		panic("TimeStamp is sick")
+	if front.Timestamp < back.Timestamp {
+		panic("Timestamp is sick")
 	}
-	difTime := front.TimeStamp - back.TimeStamp
+	difTime := front.Timestamp - back.Timestamp
 	targetTimespan := uint64(listConsensusData.Len()) * consensusInterval
 
 	if difTime < targetTimespan / 2 {
@@ -123,7 +115,7 @@ func CalculateBaseTarget(listConsensusData list.List) *big.Int  {
 		difTime = targetTimespan * 2
 	}
 
-	lastBaseTarget := front.BaseTarget
+	lastBaseTarget := front.BaseTarget.ToInt()
 	newBaseTarget := avgBaseTarget.Mul(avgBaseTarget, big.NewInt(0).SetUint64(difTime))
 	newBaseTarget = newBaseTarget.Div(newBaseTarget, big.NewInt(0).SetUint64(targetTimespan))
 
