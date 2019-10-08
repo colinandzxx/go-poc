@@ -27,7 +27,7 @@ type Consensus struct {
 
 }
 
-func calculateGenerationSignature(lastGenSig consensus.Byte32 , lastGenId uint64) []byte {
+func calculateGenerationSignature(lastGenSig consensus.Byte32, lastGenId uint64) consensus.Byte32 {
 	data := make([]byte, 40)
 	copy(data, lastGenSig[:])
 	// use BigEndian in burst code !
@@ -37,7 +37,9 @@ func calculateGenerationSignature(lastGenSig consensus.Byte32 , lastGenId uint64
 	if err != nil {
 		panic(fmt.Errorf("%v", err))
 	}
-	return s256.Sum(nil)
+	var ret consensus.Byte32
+	copy(ret[:], s256.Sum(nil)[:32])
+	return ret
 }
 
 func calculateScoop(genSig consensus.Byte32, height uint64) uint64 {

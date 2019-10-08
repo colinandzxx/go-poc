@@ -17,8 +17,6 @@ func Test_calculateScoop(t *testing.T) {
 	lastGenSig := consensus.Byte32{}
 	var lastGenId uint64 = 0xFFFFFFFFFFFFFFFF
 	sig := calculateGenerationSignature(lastGenSig, lastGenId)
-	var sig256 consensus.Byte32
-	copy(sig[:32], sig256[:])
-	scoop := calculateScoop(sig256, 1)
+	scoop := calculateScoop(sig, 1)
 	t.Logf("%v", scoop)
 }
