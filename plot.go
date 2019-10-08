@@ -22,19 +22,19 @@ func (self *simplePlot) plotPoC1(addr uint64, nonce uint64) {
 	var base [baseLen]byte
 	// use BigEndian in burst code !
 	binary.BigEndian.PutUint64(base[:], addr)
-	binary.BigEndian.PutUint64(base[:], nonce)
+	binary.BigEndian.PutUint64(base[8:], nonce)
 	genData := make([]byte, plotSize)
 	genData = append(genData, base[:]...)
 
 	s256 := shabal.NewShabal256()
-	for i := plotSize; i > 0; i += hashSize {
+	for i := plotSize; i > 0; i -= hashSize {
 		s256.Reset()
 
 		len := plotSize + baseLen - i
 		if len > hashCap {
 			len = hashCap
 		}
-		s256.Write(genData[i:len])
+		s256.Write(genData[i:(i + len)])
 		copy(genData[i - hashSize:], s256.Sum(nil))
 	}
 
@@ -53,8 +53,8 @@ func (self *simplePlot) plotPoC2(addr uint64, nonce uint64) {
 	var hashBuffer [hashSize]byte
 	revPos := plotSize - hashSize //Start at second hash in last scoop
 	for pos := hashSize; pos < plotSize / 2; pos += scoopSize { //Start at second hash in first scoop
-		copy(hashBuffer[:], self.data[pos:hashSize]) 		//Copy low scoop second hash to buffer
-		copy(self.data[pos:], self.data[revPos:hashSize]) 	//Copy high scoop second hash to low scoop second hash
+		copy(hashBuffer[:], self.data[pos:(pos + hashSize)]) 		//Copy low scoop second hash to buffer
+		copy(self.data[pos:], self.data[revPos:(revPos + hashSize)]) 	//Copy high scoop second hash to low scoop second hash
 		copy(self.data[revPos:], hashBuffer[:hashSize]) 	//Copy buffer to high scoop second hash
 		revPos -= scoopSize //move backwards
 	}

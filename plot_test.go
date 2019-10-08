@@ -14,28 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @File: consensus_test.go
- * @LastModified: 2019-10-08 17:32:02
+ * @File: plot_test.go
+ * @LastModified: 2019-10-08 17:31:49
  */
 
 package poc
 
-import (
-	"github.com/colinandzxx/go-consensus/types"
-	"testing"
-)
+import "testing"
 
-func Test_calculateGenerationSignature(t *testing.T) {
-	lastGenSig := types.Byte32{}
-	var lastGenId uint64 = 0xFFFFFFFFFFFFFFFF
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
-	t.Logf("%x", sig)
-}
-
-func Test_calculateScoop(t *testing.T) {
-	lastGenSig := types.Byte32{}
-	var lastGenId uint64 = 0xFFFFFFFFFFFFFFFF
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
-	scoop := calculateScoop(sig, 1)
-	t.Logf("%v", scoop)
+func Test_plotPoC1(t *testing.T) {
+	var poc1 simplePlot
+	poc1.plotPoC1(1, 1)
+	t.Logf("nonce: %x\n", poc1.data)
 }
