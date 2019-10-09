@@ -21,17 +21,18 @@
 package poc
 
 import (
-	"container/list"
 	"encoding/binary"
 	"fmt"
+	"github.com/colinandzxx/go-consensus"
 	"github.com/colinandzxx/go-consensus/types"
+	pocError "github.com/colinandzxx/go-poc/error"
 	"github.com/moonfruit/go-shabal"
 	"math/big"
 )
 
 // TODO: this should be configure !!!
-const consensusInterval = uint64(4 * 60) //s
-const maxBaseTarget = uint64(0x444444444) // 18325193796
+//const consensusInterval = uint64(4 * 60) //s
+//const maxBaseTarget = uint64(0x444444444) // 18325193796
 
 var two64, _ = big.NewInt(0).SetString("18446744073709551616", 10) // 0x10000000000000000
 
@@ -54,7 +55,7 @@ func calculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) typ
 	return ret
 }
 
-func calculateScoop(genSig types.Byte32, height uint64) uint64 {
+func calculateScoop(genSig types.Byte32, height uint64) int32 {
 	data := make([]byte, 40)
 	copy(data, genSig[:])
 	// use BigEndian in burst code !
@@ -68,7 +69,7 @@ func calculateScoop(genSig types.Byte32, height uint64) uint64 {
 	scoopBig := big.Int{}
 	scoopBig.SetBytes(s256.Sum(nil))
 	scoopBig.Mod(&scoopBig, big.NewInt(int64(scoopsPerPlot)))
-	return scoopBig.Uint64()
+	return int32(scoopBig.Int64())
 }
 
 func calculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
@@ -97,37 +98,46 @@ func CalculateDifficulty(baseTarget *big.Int) *big.Int {
 	return two64.Div(two64, baseTarget)
 }
 
-func calculateAvgBaseTarget(listConsensusData list.List) *big.Int  {
+func calculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32) (*big.Int, consensus.Header)  {
 	avgBaseTarget := big.NewInt(0)
+	header := from
 	var blockCounter int64 = 0
-	for e := listConsensusData.Front(); e != nil; e = e.Prev() {
+	for ; offset != 0; offset-- {
 		blockCounter++
-		prev, ok := e.Value.(*ConsensusData)
-		if !ok {
-			panic("listConsensusData can not convert to *ConsensusData")
+		var prev ConsensusData
+		_, err := prev.UnWrap(header.GetConsensusData())
+		if err != nil {
+			panic(err)
 		}
 		avgBaseTarget = avgBaseTarget.Mul(avgBaseTarget, big.NewInt(blockCounter))
 		avgBaseTarget = avgBaseTarget.Add(avgBaseTarget, prev.BaseTarget.ToInt())
 		avgBaseTarget = avgBaseTarget.Div(avgBaseTarget, big.NewInt(blockCounter + 1))
+
+		header = chain.GetHeaderByHash(header.GetParentHash())
+		if header == nil {
+			panic(pocError.GetHeaderError{
+				Hash: header.GetHash(),
+				Method: pocError.GetHeaderByHashMethod,
+			})
+		}
 	}
-	return avgBaseTarget
+
+	return avgBaseTarget, header
 }
 
-func CalculateBaseTarget(listConsensusData list.List) *big.Int  {
-	avgBaseTarget := calculateAvgBaseTarget(listConsensusData)
-	front, ok := listConsensusData.Front().Value.(*ConsensusData)
-	if !ok {
-		panic("listConsensusData can not convert to *ConsensusData")
+func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Block) *big.Int  {
+	prevHeader := prev.GetHeader()
+	if prevHeader.GetHeight() < uint64(Cfg.AvgBaseTargetNum) {
+		return big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)
 	}
-	back, ok := listConsensusData.Back().Value.(*ConsensusData)
-	if !ok {
-		panic("listConsensusData can not convert to *ConsensusData")
-	}
-	if front.Timestamp < back.Timestamp {
+
+	avgBaseTarget, back := calculateAvgBaseTarget(chain, prevHeader, Cfg.AvgBaseTargetNum)
+	front := prevHeader
+	if front.GetTimestamp() < back.GetTimestamp() {
 		panic("Timestamp is sick")
 	}
-	difTime := front.Timestamp - back.Timestamp
-	targetTimespan := uint64(listConsensusData.Len()) * consensusInterval
+	difTime := front.GetTimestamp() - back.GetTimestamp()
+	targetTimespan := uint64(Cfg.AvgBaseTargetNum * Cfg.ConsensusInterval)
 
 	if difTime < targetTimespan / 2 {
 		difTime = targetTimespan / 2
@@ -135,12 +145,18 @@ func CalculateBaseTarget(listConsensusData list.List) *big.Int  {
 		difTime = targetTimespan * 2
 	}
 
-	lastBaseTarget := front.BaseTarget.ToInt()
+	var data ConsensusData
+	_, err := data.UnWrap(front.GetConsensusData())
+	if err != nil {
+		//fmt.Errorf("%v", err)
+		return nil
+	}
+	lastBaseTarget := data.BaseTarget.ToInt()
 	newBaseTarget := avgBaseTarget.Mul(avgBaseTarget, big.NewInt(0).SetUint64(difTime))
 	newBaseTarget = newBaseTarget.Div(newBaseTarget, big.NewInt(0).SetUint64(targetTimespan))
 
-	if newBaseTarget.Cmp(big.NewInt(0).SetUint64(maxBaseTarget)) > 0 {
-		newBaseTarget = big.NewInt(0).SetUint64(maxBaseTarget)
+	if newBaseTarget.Cmp(big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)) > 0 {
+		newBaseTarget = big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)
 	}
 
 	if newBaseTarget.Cmp(big.NewInt(0)) == 0 {

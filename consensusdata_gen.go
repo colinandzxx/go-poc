@@ -26,7 +26,7 @@ func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "GenerationSignature":
-			z.GenerationSignature, err = dc.ReadByte()
+			err = z.GenerationSignature.DecodeMsg(dc)
 			if err != nil {
 				err = msgp.WrapError(err, "GenerationSignature")
 				return
@@ -67,12 +67,6 @@ func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
 					return
 				}
 			}
-		case "Timestamp":
-			z.Timestamp, err = dc.ReadUint64()
-			if err != nil {
-				err = msgp.WrapError(err, "Timestamp")
-				return
-			}
 		default:
 			err = dc.Skip()
 			if err != nil {
@@ -86,13 +80,13 @@ func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *ConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 4
+	// map header, size 3
 	// write "GenerationSignature"
-	err = en.Append(0x84, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	err = en.Append(0x83, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
 	if err != nil {
 		return
 	}
-	err = en.WriteByte(z.GenerationSignature)
+	err = z.GenerationSignature.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "GenerationSignature")
 		return
@@ -131,26 +125,20 @@ func (z *ConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
 			return
 		}
 	}
-	// write "Timestamp"
-	err = en.Append(0xa9, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
-	if err != nil {
-		return
-	}
-	err = en.WriteUint64(z.Timestamp)
-	if err != nil {
-		err = msgp.WrapError(err, "Timestamp")
-		return
-	}
 	return
 }
 
 // MarshalMsg implements msgp.Marshaler
 func (z *ConsensusData) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 4
+	// map header, size 3
 	// string "GenerationSignature"
-	o = append(o, 0x84, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
-	o = msgp.AppendByte(o, z.GenerationSignature)
+	o = append(o, 0x83, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o, err = z.GenerationSignature.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "GenerationSignature")
+		return
+	}
 	// string "BaseTarget"
 	o = append(o, 0xaa, 0x42, 0x61, 0x73, 0x65, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74)
 	if z.BaseTarget == nil {
@@ -173,9 +161,6 @@ func (z *ConsensusData) MarshalMsg(b []byte) (o []byte, err error) {
 			return
 		}
 	}
-	// string "Timestamp"
-	o = append(o, 0xa9, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
-	o = msgp.AppendUint64(o, z.Timestamp)
 	return
 }
 
@@ -198,7 +183,7 @@ func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 		}
 		switch msgp.UnsafeString(field) {
 		case "GenerationSignature":
-			z.GenerationSignature, bts, err = msgp.ReadByteBytes(bts)
+			bts, err = z.GenerationSignature.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "GenerationSignature")
 				return
@@ -237,12 +222,6 @@ func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 					return
 				}
 			}
-		case "Timestamp":
-			z.Timestamp, bts, err = msgp.ReadUint64Bytes(bts)
-			if err != nil {
-				err = msgp.WrapError(err, "Timestamp")
-				return
-			}
 		default:
 			bts, err = msgp.Skip(bts)
 			if err != nil {
@@ -257,7 +236,7 @@ func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *ConsensusData) Msgsize() (s int) {
-	s = 1 + 20 + msgp.ByteSize + 11
+	s = 1 + 20 + z.GenerationSignature.Msgsize() + 11
 	if z.BaseTarget == nil {
 		s += msgp.NilSize
 	} else {
@@ -269,6 +248,5 @@ func (z *ConsensusData) Msgsize() (s int) {
 	} else {
 		s += z.Deadline.Msgsize()
 	}
-	s += 10 + msgp.Uint64Size
 	return
 }
