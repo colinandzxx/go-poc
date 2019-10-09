@@ -20,9 +20,9 @@
 
 package poc
 
-var Cfg Config
+var Cfg config
 
-type Config struct {
+type config struct {
 	AvgBaseTargetNum uint32
 	ConsensusInterval uint32
 	MaxBaseTarget uint64
@@ -35,6 +35,6 @@ func init() {
 	Cfg.MaxBaseTarget = 0x444444444
 }
 
-func (self *Config) Load() error {
+func (self *config) Load() error {
 	return nil
 }
