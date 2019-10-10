@@ -79,7 +79,7 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 
 	// Deadline
 	var plotter simplePlot
-	plotter.plotPoC1(generator, header.GetNonce())
+	plotter.plotPoC2(generator, header.GetNonce())
 	scoopIndex := calculateScoop(self.GenerationSignature, header.GetHeight())
 	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), self.BaseTarget.ToInt().Uint64())
 	self.Deadline.Put(*dl)
