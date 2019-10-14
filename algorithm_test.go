@@ -14,8 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
- * @File: consensus_test.go
- * @LastModified: 2019-10-08 17:32:02
+ * @File: algorithm_test.go
+ * @LastModified: 2019-10-10 14:42:30
  */
 
 package poc

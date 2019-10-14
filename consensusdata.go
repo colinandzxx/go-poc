@@ -34,6 +34,8 @@ import (
 
 type ConsensusData struct {
 	GenerationSignature types.Byte32  `json: "generationSignature"`
+	Nonce               uint64	      `json: "nonce"`
+
 	BaseTarget          *types.BigInt `json: "baseTarget"`
 	Deadline            *types.BigInt `json: "deadline"`
 
@@ -41,37 +43,61 @@ type ConsensusData struct {
 	//Generator uint64
 }
 
+type WrapConsensusData struct {
+	GenerationSignature types.Byte32  `json: "generationSignature"`
+	Nonce               uint64	      `json: "nonce"`
+}
+
+func GetConsensusDataFromHeader(header consensus.Header) (*ConsensusData, error) {
+	if header == nil {
+		return nil, pocError.ErrNilHeader
+	}
+
+	if header.GetConsensusData() == nil {
+		return nil, pocError.ErrGetConsensusData
+	}
+
+	consensusData, ok := header.GetConsensusData().(*ConsensusData)
+	if !ok {
+		return nil, pocError.ErrTypeConver
+	}
+
+	return consensusData, nil
+}
+
 func (self ConsensusData) String() string {
 	return fmt.Sprintf("generationSignature: %x, baseTarget: %v, deadline: %v",
 		self.GenerationSignature, self.BaseTarget, self.Deadline)
 }
 
-func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consensus.Block) ([]byte, error) {
-	header := unconsensus.GetHeader()
-	preHeader := chain.GetHeader(header.GetHash(), header.GetHeight() - 1)
+func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consensus.Header) ([]byte, error) {
+	header := unconsensus
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
 	if preHeader == nil {
-		return []byte{}, pocError.GetHeaderError{
+		return nil, pocError.GetHeaderError{
 			Height: header.GetHeight() - 1,
-			Hash: header.GetHash(),
+			Hash: header.GetParentHash(),
 			Method: pocError.GetHeaderMethod,
 		}
 	}
-	data := preHeader.GetConsensusData()
-	if data == nil {
-		return []byte{}, pocError.ErrGetConsensusData
-	}
-	var preConsensusData ConsensusData
-	_, err := preConsensusData.UnWrap(data)
+
+	consensusData, err := GetConsensusDataFromHeader(header)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
 	}
 
-	// GenerationSignature
+	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
+	if err != nil {
+		return nil, err
+	}
+
 	generator := binary.LittleEndian.Uint64(header.GetGenerator())
+
+	// GenerationSignature
 	self.GenerationSignature = calculateGenerationSignature(preConsensusData.GenerationSignature, generator)
 
 	// BaseTarget
-	bt := CalculateBaseTarget(chain, unconsensus)
+	bt := CalculateBaseTarget(chain, preHeader)
 	if bt == nil {
 		return []byte{}, pocError.ErrCalculateBaseTarget
 	}
@@ -79,25 +105,73 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 
 	// Deadline
 	var plotter simplePlot
-	plotter.plotPoC2(generator, header.GetNonce())
+	plotter.plotPoC2(generator, consensusData.Nonce)
 	scoopIndex := calculateScoop(self.GenerationSignature, header.GetHeight())
-	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), self.BaseTarget.ToInt().Uint64())
+	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
 	self.Deadline.Put(*dl)
 
-	// encode
+	// encode as WrapConsensusData
+	wrapData := WrapConsensusData {
+		self.GenerationSignature,
+		self.Nonce,
+	}
 	var buf bytes.Buffer
-	err = msgp.Encode(&buf, self)
+	err = msgp.Encode(&buf, &wrapData)
 	if err != nil {
 		return []byte{}, err
 	}
 	return buf.Bytes(), nil
 }
 
-func (self *ConsensusData) UnWrap(ori []byte) (consensus.Data, error) {
-	buf := bytes.NewBuffer(ori)
-	err := msgp.Decode(buf, self)
+func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.Header) (consensus.Data, error) {
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
+	if preHeader == nil {
+		return nil, pocError.GetHeaderError{
+			Height: header.GetHeight() - 1,
+			Hash: header.GetParentHash(),
+			Method: pocError.GetHeaderMethod,
+		}
+	}
+
+	//consensusData, err := GetConsensusDataFromHeader(header)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return nil, err
 	}
+
+	// decode as WrapConsensusData
+	if header.GetOriConsensusData() == nil {
+		return nil, pocError.ErrNilOriData
+	}
+	var wrapData WrapConsensusData
+	buf := bytes.NewBuffer(header.GetOriConsensusData())
+	err = msgp.Decode(buf, &wrapData)
+	if err != nil {
+		return nil, err
+	}
+
+	// fix
+	self.GenerationSignature = wrapData.GenerationSignature
+	self.Nonce = wrapData.Nonce
+
+	// BaseTarget
+	bt := CalculateBaseTarget(chain, preHeader)
+	if bt == nil {
+		return nil, pocError.ErrCalculateBaseTarget
+	}
+	self.BaseTarget.Put(*bt)
+
+	// Deadline
+	generator := binary.LittleEndian.Uint64(header.GetGenerator())
+	var plotter simplePlot
+	plotter.plotPoC2(generator, self.Nonce)
+	scoopIndex := calculateScoop(self.GenerationSignature, header.GetHeight())
+	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
+	self.Deadline.Put(*dl)
+
 	return self, nil
 }

@@ -31,6 +31,12 @@ func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
 				err = msgp.WrapError(err, "GenerationSignature")
 				return
 			}
+		case "Nonce":
+			z.Nonce, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
+				return
+			}
 		case "BaseTarget":
 			if dc.IsNil() {
 				err = dc.ReadNil()
@@ -80,15 +86,25 @@ func (z *ConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
 
 // EncodeMsg implements msgp.Encodable
 func (z *ConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
-	// map header, size 3
+	// map header, size 4
 	// write "GenerationSignature"
-	err = en.Append(0x83, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	err = en.Append(0x84, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
 	if err != nil {
 		return
 	}
 	err = z.GenerationSignature.EncodeMsg(en)
 	if err != nil {
 		err = msgp.WrapError(err, "GenerationSignature")
+		return
+	}
+	// write "Nonce"
+	err = en.Append(0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Nonce)
+	if err != nil {
+		err = msgp.WrapError(err, "Nonce")
 		return
 	}
 	// write "BaseTarget"
@@ -131,14 +147,17 @@ func (z *ConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
 // MarshalMsg implements msgp.Marshaler
 func (z *ConsensusData) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
-	// map header, size 3
+	// map header, size 4
 	// string "GenerationSignature"
-	o = append(o, 0x83, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o = append(o, 0x84, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
 	o, err = z.GenerationSignature.MarshalMsg(o)
 	if err != nil {
 		err = msgp.WrapError(err, "GenerationSignature")
 		return
 	}
+	// string "Nonce"
+	o = append(o, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendUint64(o, z.Nonce)
 	// string "BaseTarget"
 	o = append(o, 0xaa, 0x42, 0x61, 0x73, 0x65, 0x54, 0x61, 0x72, 0x67, 0x65, 0x74)
 	if z.BaseTarget == nil {
@@ -186,6 +205,12 @@ func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			bts, err = z.GenerationSignature.UnmarshalMsg(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "GenerationSignature")
+				return
+			}
+		case "Nonce":
+			z.Nonce, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
 				return
 			}
 		case "BaseTarget":
@@ -236,7 +261,7 @@ func (z *ConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
 
 // Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
 func (z *ConsensusData) Msgsize() (s int) {
-	s = 1 + 20 + z.GenerationSignature.Msgsize() + 11
+	s = 1 + 20 + z.GenerationSignature.Msgsize() + 6 + msgp.Uint64Size + 11
 	if z.BaseTarget == nil {
 		s += msgp.NilSize
 	} else {
@@ -248,5 +273,137 @@ func (z *ConsensusData) Msgsize() (s int) {
 	} else {
 		s += z.Deadline.Msgsize()
 	}
+	return
+}
+
+// DecodeMsg implements msgp.Decodable
+func (z *WrapConsensusData) DecodeMsg(dc *msgp.Reader) (err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, err = dc.ReadMapHeader()
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, err = dc.ReadMapKeyPtr()
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "GenerationSignature":
+			err = z.GenerationSignature.DecodeMsg(dc)
+			if err != nil {
+				err = msgp.WrapError(err, "GenerationSignature")
+				return
+			}
+		case "Nonce":
+			z.Nonce, err = dc.ReadUint64()
+			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
+				return
+			}
+		default:
+			err = dc.Skip()
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// EncodeMsg implements msgp.Encodable
+func (z *WrapConsensusData) EncodeMsg(en *msgp.Writer) (err error) {
+	// map header, size 2
+	// write "GenerationSignature"
+	err = en.Append(0x82, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	if err != nil {
+		return
+	}
+	err = z.GenerationSignature.EncodeMsg(en)
+	if err != nil {
+		err = msgp.WrapError(err, "GenerationSignature")
+		return
+	}
+	// write "Nonce"
+	err = en.Append(0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	if err != nil {
+		return
+	}
+	err = en.WriteUint64(z.Nonce)
+	if err != nil {
+		err = msgp.WrapError(err, "Nonce")
+		return
+	}
+	return
+}
+
+// MarshalMsg implements msgp.Marshaler
+func (z *WrapConsensusData) MarshalMsg(b []byte) (o []byte, err error) {
+	o = msgp.Require(b, z.Msgsize())
+	// map header, size 2
+	// string "GenerationSignature"
+	o = append(o, 0x82, 0xb3, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75, 0x72, 0x65)
+	o, err = z.GenerationSignature.MarshalMsg(o)
+	if err != nil {
+		err = msgp.WrapError(err, "GenerationSignature")
+		return
+	}
+	// string "Nonce"
+	o = append(o, 0xa5, 0x4e, 0x6f, 0x6e, 0x63, 0x65)
+	o = msgp.AppendUint64(o, z.Nonce)
+	return
+}
+
+// UnmarshalMsg implements msgp.Unmarshaler
+func (z *WrapConsensusData) UnmarshalMsg(bts []byte) (o []byte, err error) {
+	var field []byte
+	_ = field
+	var zb0001 uint32
+	zb0001, bts, err = msgp.ReadMapHeaderBytes(bts)
+	if err != nil {
+		err = msgp.WrapError(err)
+		return
+	}
+	for zb0001 > 0 {
+		zb0001--
+		field, bts, err = msgp.ReadMapKeyZC(bts)
+		if err != nil {
+			err = msgp.WrapError(err)
+			return
+		}
+		switch msgp.UnsafeString(field) {
+		case "GenerationSignature":
+			bts, err = z.GenerationSignature.UnmarshalMsg(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "GenerationSignature")
+				return
+			}
+		case "Nonce":
+			z.Nonce, bts, err = msgp.ReadUint64Bytes(bts)
+			if err != nil {
+				err = msgp.WrapError(err, "Nonce")
+				return
+			}
+		default:
+			bts, err = msgp.Skip(bts)
+			if err != nil {
+				err = msgp.WrapError(err)
+				return
+			}
+		}
+	}
+	o = bts
+	return
+}
+
+// Msgsize returns an upper bound estimate of the number of bytes occupied by the serialized message
+func (z *WrapConsensusData) Msgsize() (s int) {
+	s = 1 + 20 + z.GenerationSignature.Msgsize() + 6 + msgp.Uint64Size
 	return
 }

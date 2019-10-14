@@ -66,4 +66,11 @@ func (err decError) Error() string { return err.msg }
 var (
 	ErrGetConsensusData   	= &decError{"can't get consensus data"}
 	ErrCalculateBaseTarget  = &decError{"can't calculate basetarget"}
+	ErrGetDifficulty = &decError{"can't get difficulty"}
+	ErrInvalidDifficulty = &decError{"non-positive difficulty"}
+	ErrSickTimestamp = &decError{"sick timestamp"}
+	ErrTypeConver = &decError{"type conversion error"}
+	ErrNilHeader = &decError{"nil header"}
+	ErrNilBlock = &decError{"nil block"}
+	ErrNilOriData = &decError{"nil origin consensus data"}
 )
