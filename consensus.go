@@ -30,6 +30,15 @@ import (
 
 // Currently only support poc2 !!!
 type Poc struct {
+	PocVerifier
+	PocForger
+}
+
+type PocVerifier struct {
+
+}
+
+type PocForger struct {
 
 }
 
@@ -42,7 +51,7 @@ type Poc struct {
 //	return calculateDifficulty(consensusData.BaseTarget.ToInt())
 //}
 
-func (self Poc) VerifyHeader(chain consensus.ChainReader, header consensus.Header) error {
+func (self PocVerifier) VerifyHeader(chain consensus.ChainReader, header consensus.Header) error {
 	// these fall under the vaildator of chain, not in consensus, so comment out
 	//if chain.GetHeader(header.GetHash(), header.GetHeight()) != nil {
 	//	// the header is known, return nil
@@ -66,7 +75,7 @@ func (self Poc) VerifyHeader(chain consensus.ChainReader, header consensus.Heade
 	return nil
 }
 
-func (self Poc) VerifyHeaderWithoutForge(chain consensus.ChainReader, header consensus.Header) error {
+func (self PocVerifier) VerifyHeaderWithoutForge(chain consensus.ChainReader, header consensus.Header) error {
 	var consensusData ConsensusData
 	_, err := consensusData.UnWrap(chain, header)
 	if err != nil {
@@ -85,7 +94,7 @@ func (self Poc) VerifyHeaderWithoutForge(chain consensus.ChainReader, header con
 	return nil
 }
 
-func (self Poc) VerifyForge(chain consensus.ChainReader, header consensus.Header) error {
+func (self PocVerifier) VerifyForge(chain consensus.ChainReader, header consensus.Header) error {
 	// Ensure that we have a valid difficulty for the block
 	if header.GetDifficulty() == nil {
 		return pocError.ErrGetDifficulty
@@ -107,12 +116,12 @@ func (self Poc) VerifyForge(chain consensus.ChainReader, header consensus.Header
 	return nil
 }
 
-func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header consensus.Header) error {
-	preHeader := chain.GetHeader(header.GetHash(), header.GetHeight() - 1)
+func (self PocVerifier) verifyGenerationSignature(chain consensus.ChainReader, header consensus.Header) error {
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
 	if preHeader == nil {
 		return pocError.GetHeaderError{
 			Height: header.GetHeight() - 1,
-			Hash: header.GetHash(),
+			Hash: header.GetParentHash(),
 			Method: pocError.GetHeaderMethod,
 		}
 	}
@@ -123,6 +132,7 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 		return err
 	}
 
+	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err
@@ -139,17 +149,17 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 	return nil
 }
 
-// don't verify basetarget, local calculate
+// don't verify base target, local calculate
 //func (self Poc) verifyBaseTarget(chain consensus.ChainReader, header consensus.Header) error {
 //	return nil
 //}
 
-func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Header) error {
-	preHeader := chain.GetHeader(header.GetHash(), header.GetHeight() - 1)
+func (self PocVerifier) verifyDeadline(chain consensus.ChainReader, header consensus.Header) error {
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
 	if preHeader == nil {
 		return pocError.GetHeaderError{
 			Height: header.GetHeight() - 1,
-			Hash: header.GetHash(),
+			Hash: header.GetParentHash(),
 			Method: pocError.GetHeaderMethod,
 		}
 	}
@@ -160,6 +170,7 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 		return err
 	}
 
+	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err
@@ -183,7 +194,8 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 	return nil
 }
 
-func (self Poc) Forge(chain consensus.ChainReader, header consensus.Header) (consensus.Data, error) {
+func (self PocForger) Forge(chain consensus.ChainReader, header consensus.Header) (consensus.Data, error) {
+	// TODO:
+
 	return nil, nil
 }
-

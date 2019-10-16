@@ -133,11 +133,6 @@ func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.
 		}
 	}
 
-	//consensusData, err := GetConsensusDataFromHeader(header)
-	//if err != nil {
-	//	return nil, err
-	//}
-
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return nil, err
