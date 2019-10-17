@@ -197,5 +197,7 @@ func (self PocVerifier) verifyDeadline(chain consensus.ChainReader, header conse
 func (self PocForger) Forge(chain consensus.ChainReader, header consensus.Header) (consensus.Data, error) {
 	// TODO:
 
+	panic("no implement")
+
 	return nil, nil
 }
