@@ -64,13 +64,17 @@ func (self PocVerifier) VerifyHeader(chain consensus.ChainReader, header consens
 	//		Method: pocError.GetHeaderMethod,
 	//	}
 	//}
-
+	
 	err := self.VerifyHeaderWithoutForge(chain, header)
 	if err != nil {
 		return err
 	}
 
-	//TODO: verify forge info
+	// verify forge info
+	err = self.VerifyForge(chain, header)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
