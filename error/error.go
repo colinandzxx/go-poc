@@ -73,4 +73,5 @@ var (
 	ErrNilHeader = &decError{"nil header"}
 	ErrNilBlock = &decError{"nil block"}
 	ErrNilOriData = &decError{"nil origin consensus data"}
+	ErrInvalidEngine = &decError{"invalid engine"}
 )

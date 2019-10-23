@@ -36,10 +36,6 @@ import (
 
 var two64, _ = big.NewInt(0).SetString("18446744073709551616", 10) // 0x10000000000000000
 
-type Consensus struct {
-
-}
-
 func calculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) types.Byte32 {
 	data := make([]byte, 40)
 	copy(data, lastGenSig[:])
@@ -99,14 +95,14 @@ func CalculateDifficulty(baseTarget *big.Int) *big.Int {
 	return two64.Div(two64, baseTarget)
 }
 
-func calculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32) (*big.Int, consensus.Header)  {
+func calculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32, poc *Poc) (*big.Int, consensus.Header)  {
 	avgBaseTarget := big.NewInt(0)
 	header := from
 	var blockCounter int64 = 0
 	for ; offset != 0; offset-- {
 		blockCounter++
 		var prev ConsensusData
-		_, err := prev.UnWrap(chain, header)
+		_, err := prev.UnWrap(chain, header, poc)
 		if err != nil {
 			panic(err)
 		}
@@ -126,18 +122,18 @@ func calculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, 
 	return avgBaseTarget, header
 }
 
-func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header) *big.Int  {
-	if prev.GetHeight() < uint64(Cfg.AvgBaseTargetNum) {
-		return big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)
+func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc *Poc) *big.Int  {
+	if prev.GetHeight() < uint64(poc.AvgBaseTargetNum) {
+		return big.NewInt(0).SetUint64(poc.MaxBaseTarget)
 	}
 
-	avgBaseTarget, back := calculateAvgBaseTarget(chain, prev, Cfg.AvgBaseTargetNum)
+	avgBaseTarget, back := calculateAvgBaseTarget(chain, prev, poc.AvgBaseTargetNum, poc)
 	front := prev
 	if front.GetTimestamp() < back.GetTimestamp() {
 		panic("Timestamp is sick")
 	}
 	difTime := front.GetTimestamp() - back.GetTimestamp()
-	targetTimespan := uint64(Cfg.AvgBaseTargetNum * Cfg.ConsensusInterval)
+	targetTimespan := uint64(poc.AvgBaseTargetNum * poc.ConsensusInterval)
 
 	if difTime < targetTimespan / 2 {
 		difTime = targetTimespan / 2
@@ -146,7 +142,7 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header) *bi
 	}
 
 	var data ConsensusData
-	_, err := data.UnWrap(chain, front)
+	_, err := data.UnWrap(chain, front, poc)
 	if err != nil {
 		//fmt.Errorf("%v", err)
 		return nil
@@ -155,8 +151,8 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header) *bi
 	newBaseTarget := avgBaseTarget.Mul(avgBaseTarget, big.NewInt(0).SetUint64(difTime))
 	newBaseTarget = newBaseTarget.Div(newBaseTarget, big.NewInt(0).SetUint64(targetTimespan))
 
-	if newBaseTarget.Cmp(big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)) > 0 {
-		newBaseTarget = big.NewInt(0).SetUint64(Cfg.MaxBaseTarget)
+	if newBaseTarget.Cmp(big.NewInt(0).SetUint64(poc.MaxBaseTarget)) > 0 {
+		newBaseTarget = big.NewInt(0).SetUint64(poc.MaxBaseTarget)
 	}
 
 	if newBaseTarget.Cmp(big.NewInt(0)) == 0 {

@@ -70,7 +70,12 @@ func (self ConsensusData) String() string {
 		self.GenerationSignature, self.BaseTarget, self.Deadline)
 }
 
-func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consensus.Header) ([]byte, error) {
+func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consensus.Header, engine consensus.Engine) ([]byte, error) {
+	poc, ok := engine.(Poc)
+	if !ok {
+		return nil, pocError.ErrInvalidEngine
+	}
+
 	header := unconsensus
 	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
 	if preHeader == nil {
@@ -97,7 +102,7 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 	self.GenerationSignature = calculateGenerationSignature(preConsensusData.GenerationSignature, generator)
 
 	// BaseTarget
-	bt := CalculateBaseTarget(chain, preHeader)
+	bt := CalculateBaseTarget(chain, preHeader, &poc)
 	if bt == nil {
 		return []byte{}, pocError.ErrCalculateBaseTarget
 	}
@@ -123,7 +128,12 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 	return buf.Bytes(), nil
 }
 
-func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.Header) (consensus.Data, error) {
+func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.Header, engine consensus.Engine) (consensus.Data, error) {
+	poc, ok := engine.(Poc)
+	if !ok {
+		return nil, pocError.ErrInvalidEngine
+	}
+
 	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
 	if preHeader == nil {
 		return nil, pocError.GetHeaderError{
@@ -154,7 +164,7 @@ func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.
 	self.Nonce = wrapData.Nonce
 
 	// BaseTarget
-	bt := CalculateBaseTarget(chain, preHeader)
+	bt := CalculateBaseTarget(chain, preHeader, &poc)
 	if bt == nil {
 		return nil, pocError.ErrCalculateBaseTarget
 	}
