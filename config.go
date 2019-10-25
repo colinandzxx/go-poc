@@ -51,7 +51,7 @@ func (self *Config) Default() {
 	self.ConsensusInterval = 240 //s
 	self.MaxBaseTarget = 0x444444444
 
-	err := self.SetGenesisData(genesisGenerationSignature, 0)
+	_, err := self.SetGenesisData(genesisGenerationSignature, 0)
 	if err != nil {
 		panic(err)
 	}
