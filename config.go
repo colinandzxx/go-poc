@@ -57,7 +57,7 @@ func (self *Config) Default() {
 	}
 }
 
-func (self *Config) SetGenesisData(generationSignature types.Byte32, nonce uint64) error {
+func (self *Config) SetGenesisData(generationSignature types.Byte32, nonce uint64) ([]byte, error) {
 	genesisData := WrapConsensusData{
 		GenerationSignature: genesisGenerationSignature,
 		Nonce: 0,
@@ -65,8 +65,8 @@ func (self *Config) SetGenesisData(generationSignature types.Byte32, nonce uint6
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &genesisData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	self.GenesisData = buf.Bytes()
-	return nil
+	return self.GenesisData, nil
 }
