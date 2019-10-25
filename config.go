@@ -42,7 +42,6 @@ type Config struct {
 	GenesisData types.Bytes
 }
 
-
 func init() {
 	Cfg.Default()
 }
