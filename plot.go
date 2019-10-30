@@ -83,6 +83,6 @@ func (self *simplePlot) plotPoC2(addr uint64, nonce uint64) {
 
 func (self simplePlot) getScoop(pos int32) types.Byte64 {
 	var data types.Byte64
-	copy(data[:], self.data[pos * scoopSize : scoopSize])
+	copy(data[:], self.data[pos * scoopSize : (pos * scoopSize + scoopSize)])
 	return data
 }
