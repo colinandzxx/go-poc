@@ -55,7 +55,7 @@ func Test_calculateDeadline(t *testing.T) {
 	//var baseTarget uint64 = 43707
 	//var height uint64 = 22532
 
-	lgs, _ := big.NewInt(0).SetString("b9150bd81ea6c6d3440d59f2a17f954074671fd1c7339ff1a3562e899639a9d1", 16)
+	lgs, _ := big.NewInt(0).SetString("cbe922a9bcb308e271badc7b30f541131b841c163434899728a3fba68e6d4699", 16)
 	blgs := lgs.Bytes()
 	for i := 0; i < len(blgs)/2; i++ {
 		blgs[i], blgs[len(blgs)-i-1] = blgs[len(blgs)-i-1], blgs[i]
@@ -65,12 +65,12 @@ func Test_calculateDeadline(t *testing.T) {
 	copy(lastGenSig[:], blgs[:32])
 	t.Logf("lastGenSig: %v\n", lastGenSig)
 
-	var lastGenId uint64 = 4640397412688285442
-	var addr uint64 = 17023786578764300
-	var nonce uint64 = 14005009674966597662
+	var lastGenId uint64 = 6986083158196820480
+	var addr uint64 = 12645014192979329200
+	var nonce uint64 = 15032170525642997731
 	//var scoopIndex int32 = 3320
-	var baseTarget uint64 = 46562
-	var height uint64 = 22550
+	var baseTarget uint64 = 37848
+	var height uint64 = 1
 
 	sig := calculateGenerationSignature(lastGenSig, lastGenId)
 	t.Logf("sig: %x\n", sig)
@@ -86,31 +86,36 @@ func Test_calculateDeadline(t *testing.T) {
 }
 
 func Test_calculateHit(t *testing.T) {
-	lastGenSig := types.Byte32{
-		0xd1, 0xa9, 0x39, 0x96, 0x89, 0x2e, 0x56, 0xa3,
-		0xf1, 0x9f, 0x33, 0xc7, 0xd1, 0x1f, 0x67, 0x74,
-		0x40, 0x95, 0x7f, 0xa1, 0xf2, 0x59, 0x0d, 0x44,
-		0xd3, 0xc6, 0xa6, 0x1e, 0xd8, 0x0b, 0x15, 0xb9,
-	}
-	var lastGenId uint64 = 4640397412688285442
-	var addr uint64 = 17023786578764300
-	var nonce uint64 = 1910725663170410144
-	//var scoopIndex int32 = 3320
-	var height uint64 = 22550
-
 	//lastGenSig := types.Byte32{
-	//	0x12, 0xbe, 0xf4, 0x68, 0x72, 0x84, 0x72, 0xd7,
-	//	0x82, 0xc5, 0x61, 0x42, 0xb8, 0x5a, 0x9c, 0x7c,
-	//	0x6b, 0x19, 0x9d, 0x2c, 0xe4, 0x1a, 0x19, 0xad,
-	//	0xf7, 0x75, 0xb3, 0xd0, 0x08, 0x48, 0x17, 0x6f,
+	//	0xd1, 0xa9, 0x39, 0x96, 0x89, 0x2e, 0x56, 0xa3,
+	//	0xf1, 0x9f, 0x33, 0xc7, 0xd1, 0x1f, 0x67, 0x74,
+	//	0x40, 0x95, 0x7f, 0xa1, 0xf2, 0x59, 0x0d, 0x44,
+	//	0xd3, 0xc6, 0xa6, 0x1e, 0xd8, 0x0b, 0x15, 0xb9,
 	//}
-	//var lastGenId uint64 = 10725173944100240
-	//var addr uint64 = 10644188562873085504
-	//var nonce uint64 = 10155657918974249875
+	//var lastGenId uint64 = 4640397412688285442
+	//var addr uint64 = 17023786578764300
+	//var nonce uint64 = 1910725663170410144
 	////var scoopIndex int32 = 3320
-	//var height uint64 = 22532
+	//var height uint64 = 22550
+
+	lgs, _ := big.NewInt(0).SetString("cbe922a9bcb308e271badc7b30f541131b841c163434899728a3fba68e6d4699", 16)
+	blgs := lgs.Bytes()
+	for i := 0; i < len(blgs)/2; i++ {
+		blgs[i], blgs[len(blgs)-i-1] = blgs[len(blgs)-i-1], blgs[i]
+	}
+
+	var lastGenSig types.Byte32
+	copy(lastGenSig[:], blgs[:32])
+	t.Logf("lastGenSig: %v\n", lastGenSig)
+
+	var lastGenId uint64 = 6986083158196820480
+	var addr uint64 = 12645014192979329200
+	var nonce uint64 = 15032170525642997731
+	//var scoopIndex int32 = 3320
+	var height uint64 = 1
 
 	sig := calculateGenerationSignature(lastGenSig, lastGenId)
+	copy(sig[:], lgs.Bytes()[:32])
 	t.Logf("sig: %x\n", sig)
 
 	scoopIndex := calculateScoop(sig, height)
@@ -123,3 +128,26 @@ func Test_calculateHit(t *testing.T) {
 	t.Logf("hit: %v\n", ht.Uint64())
 }
 
+func Test_calculateHit2(t *testing.T) {
+	lgs, _ := big.NewInt(0).SetString("24c64309d302086ecc7b03d6cb3f7287fabd45e24c476a0c2cb61a73a920a4ad", 16)
+	blgs := lgs.Bytes()
+	for i := 0; i < len(blgs)/2; i++ {
+		blgs[i], blgs[len(blgs)-i-1] = blgs[len(blgs)-i-1], blgs[i]
+	}
+	var sig types.Byte32
+	copy(sig[:], blgs[:32])
+	t.Logf("sig: %x\n", sig)
+
+	var addr uint64 = 17023786578764300
+	var nonce uint64 = 16186784844367304518
+	var height uint64 = 23206
+
+	scoopIndex := calculateScoop(sig, height)
+	t.Logf("scoopIndex: %v\n", scoopIndex)
+
+	var plotter simplePlot
+	plotter.plotPoC2(addr, nonce)
+
+	ht := calculateHit(sig, plotter.getScoop(scoopIndex))
+	t.Logf("hit: %v\n", ht.Uint64())
+}
