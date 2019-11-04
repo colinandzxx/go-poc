@@ -21,16 +21,37 @@
 package poc
 
 import (
+	"bytes"
+	"encoding/hex"
 	"github.com/colinandzxx/go-consensus/types"
 	"math/big"
 	"testing"
 )
 
+func reserve(buf *[]byte) {
+	for i := 0; i < len(*buf)/2; i++ {
+		(*buf)[i], (*buf)[len(*buf)-i-1] = (*buf)[len(*buf)-i-1], (*buf)[i]
+	}
+}
+
 func Test_calculateGenerationSignature(t *testing.T) {
-	lastGenSig := types.Byte32{}
-	var lastGenId uint64 = 0xFFFFFFFFFFFFFFFF
+	except, _ := hex.DecodeString("24c64309d302086ecc7b03d6cb3f7287fabd45e24c476a0c2cb61a73a920a4ad")
+
+	gs, _ := hex.DecodeString("8f1c281852952d203ade668f2f3114ac6c01f1260ab9567f24a4d75b8efbae5c")
+	reserve(&gs)
+	var lastGenSig types.Byte32
+	copy(lastGenSig[:], gs[:32])
+	t.Logf("lastGenSig: %x\n", lastGenSig)
+	var lastGenId uint64 = 58970560028650869
 	sig := calculateGenerationSignature(lastGenSig, lastGenId)
-	t.Logf("%x", sig)
+	var bufSig []byte = make([]byte, 32)
+	copy(bufSig, sig[:32])
+	reserve(&bufSig)
+	t.Logf("bufSig: %x", bufSig)
+
+	if bytes.Compare(except, bufSig) != 0 {
+		t.Errorf("fail to calculateGenerationSignature, ret: %x, want: %x", bufSig, except)
+	}
 }
 
 func Test_calculateScoop(t *testing.T) {
@@ -129,13 +150,12 @@ func Test_calculateHit(t *testing.T) {
 }
 
 func Test_calculateHit2(t *testing.T) {
-	lgs, _ := big.NewInt(0).SetString("24c64309d302086ecc7b03d6cb3f7287fabd45e24c476a0c2cb61a73a920a4ad", 16)
-	blgs := lgs.Bytes()
-	for i := 0; i < len(blgs)/2; i++ {
-		blgs[i], blgs[len(blgs)-i-1] = blgs[len(blgs)-i-1], blgs[i]
+	gs, _ := hex.DecodeString("24c64309d302086ecc7b03d6cb3f7287fabd45e24c476a0c2cb61a73a920a4ad")
+	for i := 0; i < len(gs)/2; i++ {
+		gs[i], gs[len(gs)-i-1] = gs[len(gs)-i-1], gs[i]
 	}
 	var sig types.Byte32
-	copy(sig[:], blgs[:32])
+	copy(sig[:], gs[:32])
 	t.Logf("sig: %x\n", sig)
 
 	var addr uint64 = 17023786578764300
