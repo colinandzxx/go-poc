@@ -99,7 +99,7 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 	generator := binary.LittleEndian.Uint64(header.GetGenerator())
 
 	// GenerationSignature
-	self.GenerationSignature = calculateGenerationSignature(preConsensusData.GenerationSignature, generator)
+	self.GenerationSignature = CalculateGenerationSignature(preConsensusData.GenerationSignature, generator)
 
 	// BaseTarget
 	bt := CalculateBaseTarget(chain, preHeader, &poc)
@@ -109,10 +109,10 @@ func (self *ConsensusData) Wrap(chain consensus.ChainReader, unconsensus consens
 	self.BaseTarget.Put(*bt)
 
 	// Deadline
-	var plotter simplePlot
-	plotter.plotPoC2(generator, consensusData.Nonce)
-	scoopIndex := calculateScoop(self.GenerationSignature, header.GetHeight())
-	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
+	var plotter SimplePlotter
+	plotter.PlotPoC2(generator, consensusData.Nonce)
+	scoopIndex := CalculateScoop(self.GenerationSignature, header.GetHeight())
+	dl := CalculateDeadline(self.GenerationSignature, plotter.GetScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
 	self.Deadline.Put(*dl)
 
 	// encode as WrapConsensusData
@@ -172,10 +172,10 @@ func (self *ConsensusData) UnWrap(chain consensus.ChainReader, header consensus.
 
 	// Deadline
 	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	var plotter simplePlot
-	plotter.plotPoC2(generator, self.Nonce)
-	scoopIndex := calculateScoop(self.GenerationSignature, header.GetHeight())
-	dl := calculateDeadline(self.GenerationSignature, plotter.getScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
+	var plotter SimplePlotter
+	plotter.PlotPoC2(generator, self.Nonce)
+	scoopIndex := CalculateScoop(self.GenerationSignature, header.GetHeight())
+	dl := CalculateDeadline(self.GenerationSignature, plotter.GetScoop(scoopIndex), preConsensusData.BaseTarget.ToInt().Uint64())
 	self.Deadline.Put(*dl)
 
 	return self, nil

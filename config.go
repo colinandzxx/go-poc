@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @File: config.go
- * @LastModified: 2019-10-09 14:35:23
+ * @LastModified: 2019-11-07 15:00:48
  */
 
 package poc
@@ -25,8 +25,6 @@ import (
 	"github.com/colinandzxx/go-consensus/types"
 	"github.com/tinylib/msgp/msgp"
 )
-
-var Cfg Config
 
 var genesisGenerationSignature = types.Byte32{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -39,11 +37,12 @@ type Config struct {
 	MaxBaseTarget uint64
 	//Loglevel
 
-	GenesisData types.Bytes
+	genesis Genenis
 }
 
-func init() {
-	Cfg.Default()
+type Genenis struct {
+	GenerationSignature types.Byte32
+	Nonce uint64
 }
 
 func (self *Config) Default() {
@@ -51,22 +50,19 @@ func (self *Config) Default() {
 	self.ConsensusInterval = 240 //s
 	self.MaxBaseTarget = 0x444444444
 
-	_, err := self.SetGenesisData(genesisGenerationSignature, 0)
-	if err != nil {
-		panic(err)
-	}
+	self.genesis.GenerationSignature = genesisGenerationSignature
+	self.genesis.Nonce = 0
 }
 
-func (self *Config) SetGenesisData(generationSignature types.Byte32, nonce uint64) ([]byte, error) {
+func (self *Config) GetGenesisConsensusData() ([]byte, error) {
 	genesisData := WrapConsensusData{
-		GenerationSignature: genesisGenerationSignature,
-		Nonce: 0,
+		GenerationSignature: self.genesis.GenerationSignature,
+		Nonce:               self.genesis.Nonce,
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &genesisData)
 	if err != nil {
 		return nil, err
 	}
-	self.GenesisData = buf.Bytes()
-	return self.GenesisData, nil
+	return buf.Bytes(), nil
 }

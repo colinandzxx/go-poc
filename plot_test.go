@@ -23,7 +23,13 @@ package poc
 import "testing"
 
 func Test_plotPoC1(t *testing.T) {
-	var poc1 simplePlot
-	poc1.plotPoC1(1, 1)
-	t.Logf("nonce: %x\n", poc1.data)
+	var plotter SimplePlotter
+	plotter.PlotPoC1(1, 1)
+	t.Logf("nonce: %x\n", plotter.data)
+}
+
+func Test_plotPoC2(t *testing.T) {
+	var plotter SimplePlotter
+	plotter.PlotPoC2(1, 1)
+	t.Logf("nonce: %x\n", plotter.data)
 }

@@ -35,11 +35,11 @@ const hashCap = 4096
 
 const baseLen = 16
 
-type simplePlot struct {
+type SimplePlotter struct {
 	data [plotSize]byte
 }
 
-func (self *simplePlot) plotPoC1(addr uint64, nonce uint64) {
+func (self *SimplePlotter) PlotPoC1(addr uint64, nonce uint64) {
 	var base [baseLen]byte
 	// use BigEndian in burst code !
 	binary.BigEndian.PutUint64(base[:], addr)
@@ -67,8 +67,8 @@ func (self *simplePlot) plotPoC1(addr uint64, nonce uint64) {
 	}
 }
 
-func (self *simplePlot) plotPoC2(addr uint64, nonce uint64) {
-	self.plotPoC1(addr, nonce)
+func (self *SimplePlotter) PlotPoC2(addr uint64, nonce uint64) {
+	self.PlotPoC1(addr, nonce)
 
 	//PoC2 Rearrangement
 	var hashBuffer [hashSize]byte
@@ -81,7 +81,7 @@ func (self *simplePlot) plotPoC2(addr uint64, nonce uint64) {
 	}
 }
 
-func (self simplePlot) getScoop(pos int32) types.Byte64 {
+func (self SimplePlotter) GetScoop(pos int32) types.Byte64 {
 	var data types.Byte64
 	copy(data[:], self.data[pos * scoopSize : (pos * scoopSize + scoopSize)])
 	return data

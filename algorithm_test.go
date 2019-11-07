@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @File: algorithm_test.go
- * @LastModified: 2019-10-10 14:42:30
+ * @LastModified: 2019-11-07 14:52:23
  */
 
 package poc
@@ -43,7 +43,7 @@ func Test_calculateGenerationSignature(t *testing.T) {
 	copy(lastGenSig[:], gs[:32])
 	t.Logf("lastGenSig: %x\n", lastGenSig)
 	var lastGenId uint64 = 58970560028650869
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
+	sig := CalculateGenerationSignature(lastGenSig, lastGenId)
 	var bufSig []byte = make([]byte, 32)
 	copy(bufSig, sig[:32])
 	reserve(&bufSig)
@@ -57,8 +57,8 @@ func Test_calculateGenerationSignature(t *testing.T) {
 func Test_calculateScoop(t *testing.T) {
 	lastGenSig := types.Byte32{}
 	var lastGenId uint64 = 0xFFFFFFFFFFFFFFFF
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
-	scoop := calculateScoop(sig, 1)
+	sig := CalculateGenerationSignature(lastGenSig, lastGenId)
+	scoop := CalculateScoop(sig, 1)
 	t.Logf("%v", scoop)
 }
 
@@ -93,16 +93,16 @@ func Test_calculateDeadline(t *testing.T) {
 	var baseTarget uint64 = 37848
 	var height uint64 = 1
 
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
+	sig := CalculateGenerationSignature(lastGenSig, lastGenId)
 	t.Logf("sig: %x\n", sig)
 
-	scoopIndex := calculateScoop(sig, height)
+	scoopIndex := CalculateScoop(sig, height)
 	t.Logf("scoopIndex: %v\n", scoopIndex)
 
-	var plotter simplePlot
-	plotter.plotPoC2(addr, nonce)
+	var plotter SimplePlotter
+	plotter.PlotPoC2(addr, nonce)
 
-	dl := calculateDeadline(sig, plotter.getScoop(scoopIndex), baseTarget)
+	dl := CalculateDeadline(sig, plotter.GetScoop(scoopIndex), baseTarget)
 	t.Logf("deadline: %v\n", dl.Uint64())
 }
 
@@ -135,17 +135,17 @@ func Test_calculateHit(t *testing.T) {
 	//var scoopIndex int32 = 3320
 	var height uint64 = 1
 
-	sig := calculateGenerationSignature(lastGenSig, lastGenId)
+	sig := CalculateGenerationSignature(lastGenSig, lastGenId)
 	copy(sig[:], lgs.Bytes()[:32])
 	t.Logf("sig: %x\n", sig)
 
-	scoopIndex := calculateScoop(sig, height)
+	scoopIndex := CalculateScoop(sig, height)
 	t.Logf("scoopIndex: %v\n", scoopIndex)
 
-	var plotter simplePlot
-	plotter.plotPoC2(addr, nonce)
+	var plotter SimplePlotter
+	plotter.PlotPoC2(addr, nonce)
 
-	ht := calculateHit(sig, plotter.getScoop(scoopIndex))
+	ht := CalculateHit(sig, plotter.GetScoop(scoopIndex))
 	t.Logf("hit: %v\n", ht.Uint64())
 }
 
@@ -162,12 +162,12 @@ func Test_calculateHit2(t *testing.T) {
 	var nonce uint64 = 16186784844367304518
 	var height uint64 = 23206
 
-	scoopIndex := calculateScoop(sig, height)
+	scoopIndex := CalculateScoop(sig, height)
 	t.Logf("scoopIndex: %v\n", scoopIndex)
 
-	var plotter simplePlot
-	plotter.plotPoC2(addr, nonce)
+	var plotter SimplePlotter
+	plotter.PlotPoC2(addr, nonce)
 
-	ht := calculateHit(sig, plotter.getScoop(scoopIndex))
+	ht := CalculateHit(sig, plotter.GetScoop(scoopIndex))
 	t.Logf("hit: %v\n", ht.Uint64())
 }

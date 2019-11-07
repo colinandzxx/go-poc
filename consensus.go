@@ -135,7 +135,7 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 
 	// GenerationSignature
 	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	generationSignature := calculateGenerationSignature(preConsensusData.GenerationSignature, generator)
+	generationSignature := CalculateGenerationSignature(preConsensusData.GenerationSignature, generator)
 	if bytes.Compare(consensusData.GenerationSignature[:], generationSignature[:]) != 0 {
 		return fmt.Errorf("invalid generationSignature: have %x, want %x",
 			consensusData.GenerationSignature, generationSignature)
@@ -171,12 +171,12 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 		return err
 	}
 
-	var plot simplePlot
+	var plot SimplePlotter
 	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	plot.plotPoC2(generator, consensusData.Nonce)
-	scoopNum := calculateScoop(consensusData.GenerationSignature, header.GetHeight())
-	scoopData := plot.getScoop(scoopNum)
-	deadline := calculateDeadline(consensusData.GenerationSignature, scoopData, preConsensusData.BaseTarget.ToInt().Uint64())
+	plot.PlotPoC2(generator, consensusData.Nonce)
+	scoopNum := CalculateScoop(consensusData.GenerationSignature, header.GetHeight())
+	scoopData := plot.GetScoop(scoopNum)
+	deadline := CalculateDeadline(consensusData.GenerationSignature, scoopData, preConsensusData.BaseTarget.ToInt().Uint64())
 
 	if header.GetTimestamp() < preHeader.GetTimestamp() {
 		return pocError.ErrSickTimestamp

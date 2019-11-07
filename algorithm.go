@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * @File: algorithm.go
- * @LastModified: 2019-10-10 14:42:30
+ * @LastModified: 2019-11-07 14:52:22
  */
 
 package poc
@@ -36,7 +36,7 @@ import (
 
 var two64, _ = big.NewInt(0).SetString("18446744073709551616", 10) // 0x10000000000000000
 
-func calculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) types.Byte32 {
+func CalculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) types.Byte32 {
 	data := make([]byte, 40)
 	copy(data, lastGenSig[:])
 	// use BigEndian in burst code !
@@ -51,7 +51,7 @@ func calculateGenerationSignature(lastGenSig types.Byte32, lastGenId uint64) typ
 	return ret
 }
 
-func calculateScoop(genSig types.Byte32, height uint64) int32 {
+func CalculateScoop(genSig types.Byte32, height uint64) int32 {
 	data := make([]byte, 40)
 	copy(data, genSig[:])
 	// use BigEndian in burst code !
@@ -68,7 +68,7 @@ func calculateScoop(genSig types.Byte32, height uint64) int32 {
 	return int32(scoopBig.Int64())
 }
 
-func calculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
+func CalculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 	s256 := shabal.NewShabal256()
 	_, err := s256.Write(genSig[:])
 	if err != nil {
@@ -86,8 +86,15 @@ func calculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 }
 
 // baseTarget from prev header !!
-func calculateDeadline(genSig types.Byte32, scoopData types.Byte64, baseTarget uint64) *big.Int {
-	hit := calculateHit(genSig, scoopData)
+func CalculateDeadline(genSig types.Byte32, scoopData types.Byte64, baseTarget uint64) *big.Int {
+	hit := CalculateHit(genSig, scoopData)
+	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+}
+
+func CalculateDeadlineByHit(hit *big.Int, baseTarget uint64) *big.Int {
+	if hit == nil {
+		return nil
+	}
 	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
 }
 
@@ -95,7 +102,7 @@ func CalculateDifficulty(baseTarget *big.Int) *big.Int {
 	return two64.Div(two64, baseTarget)
 }
 
-func calculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32, poc *Poc) (*big.Int, consensus.Header)  {
+func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32, poc *Poc) (*big.Int, consensus.Header)  {
 	avgBaseTarget := big.NewInt(0)
 	header := from
 	var blockCounter int64 = 0
@@ -127,7 +134,7 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc
 		return big.NewInt(0).SetUint64(poc.MaxBaseTarget)
 	}
 
-	avgBaseTarget, back := calculateAvgBaseTarget(chain, prev, poc.AvgBaseTargetNum, poc)
+	avgBaseTarget, back := CalculateAvgBaseTarget(chain, prev, poc.AvgBaseTargetNum, poc)
 	front := prev
 	if front.GetTimestamp() < back.GetTimestamp() {
 		panic("Timestamp is sick")
