@@ -37,7 +37,7 @@ type Config struct {
 	MaxBaseTarget uint64
 	//Loglevel
 
-	genesis Genenis
+	Gen Genenis
 }
 
 type Genenis struct {
@@ -50,14 +50,14 @@ func (self *Config) Default() {
 	self.ConsensusInterval = 240 //s
 	self.MaxBaseTarget = 0x444444444
 
-	self.genesis.GenerationSignature = genesisGenerationSignature
-	self.genesis.Nonce = 0
+	self.Gen.GenerationSignature = genesisGenerationSignature
+	self.Gen.Nonce = 0
 }
 
 func (self *Config) GetGenesisConsensusData() ([]byte, error) {
 	genesisData := WrapConsensusData{
-		GenerationSignature: self.genesis.GenerationSignature,
-		Nonce:               self.genesis.Nonce,
+		GenerationSignature: self.Gen.GenerationSignature,
+		Nonce:               self.Gen.Nonce,
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &genesisData)
