@@ -22,7 +22,6 @@ package poc
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/colinandzxx/go-consensus"
 	pocError "github.com/colinandzxx/go-poc/error"
@@ -192,8 +191,7 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 	}
 
 	var plot SimplePlotter
-	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	plot.PlotPoC2(generator, consensusData.Nonce)
+	plot.PlotPoC2(consensusData.GenId, consensusData.Nonce)
 	scoopNum := CalculateScoop(consensusData.GenerationSignature, header.GetHeight())
 	scoopData := plot.GetScoop(scoopNum)
 	deadline := CalculateDeadline(consensusData.GenerationSignature, scoopData, preConsensusData.BaseTarget.ToInt().Uint64())

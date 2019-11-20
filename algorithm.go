@@ -86,16 +86,16 @@ func CalculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 }
 
 // baseTarget from prev header !!
-func CalculateDeadline(genSig types.Byte32, scoopData types.Byte64, baseTarget uint64) *big.Int {
+func CalculateDeadline(genSig types.Byte32, scoopData types.Byte64, lastBaseTarget uint64) *big.Int {
 	hit := CalculateHit(genSig, scoopData)
-	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+	return CalculateDeadlineByHit(hit, lastBaseTarget)
 }
 
-func CalculateDeadlineByHit(hit *big.Int, baseTarget uint64) *big.Int {
+func CalculateDeadlineByHit(hit *big.Int, lastBaseTarget uint64) *big.Int {
 	if hit == nil {
 		return nil
 	}
-	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+	return hit.Div(hit, big.NewInt(0).SetUint64(lastBaseTarget))
 }
 
 func CalculateDifficulty(baseTarget *big.Int) *big.Int {
