@@ -72,7 +72,7 @@ func (self Poc) VerifyHeader(chain consensus.ChainReader, header consensus.Heade
 
 func (self Poc) VerifyHeaderWithoutForge(chain consensus.ChainReader, header consensus.Header) error {
 	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	err := consensusData.UnWrap(header.GetOriConsensusData())
 	if err != nil {
 		return pocError.ErrGetConsensusData
 	}
@@ -121,21 +121,19 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 		}
 	}
 
-	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	consensusData, err := GetConsensusDataFromHeader(header)
 	if err != nil {
 		return err
 	}
 
-	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err
 	}
 
 	// GenerationSignature
-	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	generationSignature := CalculateGenerationSignature(preConsensusData.GenerationSignature, generator)
+	//generator := binary.LittleEndian.Uint64(header.GetGenerator())
+	generationSignature := CalculateGenerationSignature(preConsensusData.GenerationSignature, preConsensusData.GenId)
 	if bytes.Compare(consensusData.GenerationSignature[:], generationSignature[:]) != 0 {
 		return fmt.Errorf("invalid generationSignature: have %x, want %x",
 			consensusData.GenerationSignature, generationSignature)
@@ -159,13 +157,11 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 		}
 	}
 
-	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	consensusData, err := GetConsensusDataFromHeader(header)
 	if err != nil {
 		return err
 	}
 
-	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err

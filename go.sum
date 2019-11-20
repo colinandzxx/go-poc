@@ -1,5 +1,7 @@
 github.com/colinandzxx/go-consensus v0.0.0-20191023085306-db15833fd78c h1:YOi4SmmitCcIuBjHm7w8C9OqPwI/VC+6gUp/ArVVEn8=
 github.com/colinandzxx/go-consensus v0.0.0-20191023085306-db15833fd78c/go.mod h1:oIHMhYWAYNvgPvHo3qDM/jdm37mm7q3s6mnD+UODLaA=
+github.com/colinandzxx/go-consensus v0.0.0-20191120035224-277f923bd717 h1:V0Tcdt3u0+o6TFQZkjPVCVC7JNl5Lkq5QG7z2e+soyM=
+github.com/colinandzxx/go-consensus v0.0.0-20191120035224-277f923bd717/go.mod h1:oIHMhYWAYNvgPvHo3qDM/jdm37mm7q3s6mnD+UODLaA=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/moonfruit/go-shabal v0.0.0-20190704132617-8cd17efc8c99 h1:kxuxLQBbQhpy3xvRjzTE6FQmRFwffj3U/v/xqRDZ8hI=

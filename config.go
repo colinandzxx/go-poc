@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"github.com/colinandzxx/go-consensus/types"
 	"github.com/tinylib/msgp/msgp"
+	"math/big"
 )
 
 var genesisGenerationSignature = types.Byte32{
@@ -43,6 +44,7 @@ type Config struct {
 type Genenis struct {
 	GenerationSignature types.Byte32
 	Nonce uint64
+	GenId uint64
 }
 
 func (self *Config) Default() {
@@ -55,9 +57,11 @@ func (self *Config) Default() {
 }
 
 func (self *Config) GetGenesisConsensusData() ([]byte, error) {
-	genesisData := WrapConsensusData{
+	genesisData := ConsensusData{
 		GenerationSignature: self.Gen.GenerationSignature,
 		Nonce:               self.Gen.Nonce,
+		GenId:               self.Gen.GenId,
+		BaseTarget:          types.NewBigInt(*big.NewInt(0).SetUint64(self.MaxBaseTarget)),
 	}
 	var buf bytes.Buffer
 	err := msgp.Encode(&buf, &genesisData)
