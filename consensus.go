@@ -103,6 +103,11 @@ func (self Poc) VerifyForge(chain consensus.ChainReader, header consensus.Header
 		return err
 	}
 
+	err = self.verifyBaseTarget(chain, header)
+	if err != nil {
+		return err
+	}
+
 	err = self.verifyDeadline(chain, header)
 	if err != nil {
 		return err
@@ -142,10 +147,29 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 	return nil
 }
 
-// don't verify base target, local calculate
-//func (self Poc) verifyBaseTarget(chain consensus.ChainReader, header consensus.Header) error {
-//	return nil
-//}
+func (self Poc) verifyBaseTarget(chain consensus.ChainReader, header consensus.Header) error {
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
+	if preHeader == nil {
+		return pocError.GetHeaderError{
+			Height: header.GetHeight() - 1,
+			Hash: header.GetParentHash(),
+			Method: pocError.GetHeaderMethod,
+		}
+	}
+
+	consensusData, err := GetConsensusDataFromHeader(header)
+	if err != nil {
+		return err
+	}
+
+	bt := CalculateBaseTarget(chain, preHeader, &self)
+	if bt.Cmp(&consensusData.BaseTarget.IntVal) != 0 {
+		return fmt.Errorf("invalid baseTarget: have %v, want %v",
+			consensusData.BaseTarget.IntVal.Uint64(), bt.Uint64())
+	}
+
+	return nil
+}
 
 func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Header) error {
 	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
@@ -179,7 +203,8 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 	}
 	elapsedTime := header.GetTimestamp() - preHeader.GetTimestamp()
 	if elapsedTime <= deadline.Uint64() {
-		return fmt.Errorf("deadline does not match the block timestamp: %v, %v, %v", header.GetHeight(), elapsedTime, deadline)
+		return fmt.Errorf("deadline does not match the block timestamp: %v, %v, %v",
+			header.GetHeight(), elapsedTime, deadline)
 	}
 
 	return nil
