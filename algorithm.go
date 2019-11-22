@@ -86,33 +86,34 @@ func CalculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 }
 
 // baseTarget from prev header !!
-func CalculateDeadline(genSig types.Byte32, scoopData types.Byte64, baseTarget uint64) *big.Int {
+func CalculateDeadline(genSig types.Byte32, scoopData types.Byte64, lastBaseTarget uint64) *big.Int {
 	hit := CalculateHit(genSig, scoopData)
-	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+	return CalculateDeadlineByHit(hit, lastBaseTarget)
 }
 
-func CalculateDeadlineByHit(hit *big.Int, baseTarget uint64) *big.Int {
+func CalculateDeadlineByHit(hit *big.Int, lastBaseTarget uint64) *big.Int {
 	if hit == nil {
 		return nil
 	}
-	return big.NewInt(0).Div(hit, big.NewInt(0).SetUint64(baseTarget))
+	return big.NewInt(0).Div(hit, big.NewInt(0).SetUint64(lastBaseTarget))
 }
 
 func CalculateDifficulty(baseTarget *big.Int) *big.Int {
 	return big.NewInt(0).Div(two64, baseTarget)
 }
 
-func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32, poc *Poc) (*big.Int, consensus.Header)  {
+func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32) (*big.Int, consensus.Header)  {
 	avgBaseTarget := big.NewInt(0)
 	header := from
 	var blockCounter int64 = 0
 	for ; offset != 0; offset-- {
 		blockCounter++
-		var prev ConsensusData
-		_, err := prev.UnWrap(chain, header, poc)
+
+		prev, err := GetConsensusDataFromHeader(header)
 		if err != nil {
 			panic(err)
 		}
+
 		avgBaseTarget = avgBaseTarget.Mul(avgBaseTarget, big.NewInt(blockCounter))
 		avgBaseTarget = avgBaseTarget.Add(avgBaseTarget, prev.BaseTarget.ToInt())
 		avgBaseTarget = avgBaseTarget.Div(avgBaseTarget, big.NewInt(blockCounter + 1))
@@ -134,7 +135,7 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc
 		return big.NewInt(0).SetUint64(poc.MaxBaseTarget)
 	}
 
-	avgBaseTarget, back := CalculateAvgBaseTarget(chain, prev, poc.AvgBaseTargetNum, poc)
+	avgBaseTarget, back := CalculateAvgBaseTarget(chain, prev, poc.AvgBaseTargetNum)
 	front := prev
 	if front.GetTimestamp() < back.GetTimestamp() {
 		panic("Timestamp is sick")
@@ -148,12 +149,11 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc
 		difTime = targetTimespan * 2
 	}
 
-	var data ConsensusData
-	_, err := data.UnWrap(chain, front, poc)
+	data, err := GetConsensusDataFromHeader(prev)
 	if err != nil {
-		//fmt.Errorf("%v", err)
-		return nil
+		panic(err)
 	}
+
 	lastBaseTarget := data.BaseTarget.ToInt()
 	newBaseTarget := avgBaseTarget.Mul(avgBaseTarget, big.NewInt(0).SetUint64(difTime))
 	newBaseTarget = newBaseTarget.Div(newBaseTarget, big.NewInt(0).SetUint64(targetTimespan))

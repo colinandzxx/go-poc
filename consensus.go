@@ -22,7 +22,6 @@ package poc
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"github.com/colinandzxx/go-consensus"
 	pocError "github.com/colinandzxx/go-poc/error"
@@ -72,7 +71,7 @@ func (self Poc) VerifyHeader(chain consensus.ChainReader, header consensus.Heade
 
 func (self Poc) VerifyHeaderWithoutForge(chain consensus.ChainReader, header consensus.Header) error {
 	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	err := consensusData.UnWrap(header.GetOriConsensusData())
 	if err != nil {
 		return pocError.ErrGetConsensusData
 	}
@@ -103,6 +102,11 @@ func (self Poc) VerifyForge(chain consensus.ChainReader, header consensus.Header
 		return err
 	}
 
+	err = self.verifyBaseTarget(chain, header)
+	if err != nil {
+		return err
+	}
+
 	err = self.verifyDeadline(chain, header)
 	if err != nil {
 		return err
@@ -121,21 +125,19 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 		}
 	}
 
-	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	consensusData, err := GetConsensusDataFromHeader(header)
 	if err != nil {
 		return err
 	}
 
-	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err
 	}
 
 	// GenerationSignature
-	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	generationSignature := CalculateGenerationSignature(preConsensusData.GenerationSignature, generator)
+	//generator := binary.LittleEndian.Uint64(header.GetGenerator())
+	generationSignature := CalculateGenerationSignature(preConsensusData.GenerationSignature, preConsensusData.GenId)
 	if bytes.Compare(consensusData.GenerationSignature[:], generationSignature[:]) != 0 {
 		return fmt.Errorf("invalid generationSignature: have %x, want %x",
 			consensusData.GenerationSignature, generationSignature)
@@ -144,10 +146,29 @@ func (self Poc) verifyGenerationSignature(chain consensus.ChainReader, header co
 	return nil
 }
 
-// don't verify base target, local calculate
-//func (self Poc) verifyBaseTarget(chain consensus.ChainReader, header consensus.Header) error {
-//	return nil
-//}
+func (self Poc) verifyBaseTarget(chain consensus.ChainReader, header consensus.Header) error {
+	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
+	if preHeader == nil {
+		return pocError.GetHeaderError{
+			Height: header.GetHeight() - 1,
+			Hash: header.GetParentHash(),
+			Method: pocError.GetHeaderMethod,
+		}
+	}
+
+	consensusData, err := GetConsensusDataFromHeader(header)
+	if err != nil {
+		return err
+	}
+
+	bt := CalculateBaseTarget(chain, preHeader, &self)
+	if bt.Cmp(&consensusData.BaseTarget.IntVal) != 0 {
+		return fmt.Errorf("invalid baseTarget: have %v, want %v",
+			consensusData.BaseTarget.IntVal.Uint64(), bt.Uint64())
+	}
+
+	return nil
+}
 
 func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Header) error {
 	preHeader := chain.GetHeader(header.GetParentHash(), header.GetHeight() - 1)
@@ -159,21 +180,18 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 		}
 	}
 
-	var consensusData ConsensusData
-	_, err := consensusData.UnWrap(chain, header, self)
+	consensusData, err := GetConsensusDataFromHeader(header)
 	if err != nil {
 		return err
 	}
 
-	// direct access consensus data
 	preConsensusData, err := GetConsensusDataFromHeader(preHeader)
 	if err != nil {
 		return err
 	}
 
 	var plot SimplePlotter
-	generator := binary.LittleEndian.Uint64(header.GetGenerator())
-	plot.PlotPoC2(generator, consensusData.Nonce)
+	plot.PlotPoC2(consensusData.GenId, consensusData.Nonce)
 	scoopNum := CalculateScoop(consensusData.GenerationSignature, header.GetHeight())
 	scoopData := plot.GetScoop(scoopNum)
 	deadline := CalculateDeadline(consensusData.GenerationSignature, scoopData, preConsensusData.BaseTarget.ToInt().Uint64())
@@ -183,7 +201,8 @@ func (self Poc) verifyDeadline(chain consensus.ChainReader, header consensus.Hea
 	}
 	elapsedTime := header.GetTimestamp() - preHeader.GetTimestamp()
 	if elapsedTime <= deadline.Uint64() {
-		return fmt.Errorf("deadline does not match the block timestamp: %v, %v, %v", header.GetHeight(), elapsedTime, deadline)
+		return fmt.Errorf("deadline does not match the block timestamp: %v, %v, %v",
+			header.GetHeight(), elapsedTime, deadline)
 	}
 
 	return nil
