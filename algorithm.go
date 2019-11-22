@@ -95,11 +95,11 @@ func CalculateDeadlineByHit(hit *big.Int, baseTarget uint64) *big.Int {
 	if hit == nil {
 		return nil
 	}
-	return hit.Div(hit, big.NewInt(0).SetUint64(baseTarget))
+	return big.NewInt(0).Div(hit, big.NewInt(0).SetUint64(baseTarget))
 }
 
 func CalculateDifficulty(baseTarget *big.Int) *big.Int {
-	return two64.Div(two64, baseTarget)
+	return big.NewInt(0).Div(two64, baseTarget)
 }
 
 func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, offset uint32, poc *Poc) (*big.Int, consensus.Header)  {
