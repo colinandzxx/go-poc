@@ -81,7 +81,7 @@ func CalculateHit(genSig types.Byte32, scoopData types.Byte64) *big.Int {
 
 	hitBig := big.NewInt(0)
 	hitBytes := s256.Sum(nil)
-	hitBig.SetBytes([]byte{hitBytes[7], hitBytes[6], hitBytes[5], hitBytes[5], hitBytes[3], hitBytes[2], hitBytes[1], hitBytes[0]})
+	hitBig.SetBytes([]byte{hitBytes[7], hitBytes[6], hitBytes[5], hitBytes[4], hitBytes[3], hitBytes[2], hitBytes[1], hitBytes[0]})
 	return hitBig
 }
 
