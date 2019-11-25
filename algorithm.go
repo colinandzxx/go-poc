@@ -107,8 +107,6 @@ func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, 
 	header := from
 	var blockCounter int64 = 0
 	for ; offset != 0; offset-- {
-		blockCounter++
-
 		prev, err := GetConsensusDataFromHeader(header)
 		if err != nil {
 			panic(err)
@@ -118,13 +116,18 @@ func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, 
 		avgBaseTarget = avgBaseTarget.Add(avgBaseTarget, prev.BaseTarget.ToInt())
 		avgBaseTarget = avgBaseTarget.Div(avgBaseTarget, big.NewInt(blockCounter + 1))
 
-		header = chain.GetHeaderByHash(header.GetParentHash())
-		if header == nil {
-			panic(pocError.GetHeaderError{
-				Hash: header.GetHash(),
-				Method: pocError.GetHeaderByHashMethod,
-			})
+		// return the last header
+		if offset != 1 {
+			header = chain.GetHeaderByHash(header.GetParentHash())
+			if header == nil {
+				panic(pocError.GetHeaderError{
+					Hash:   header.GetHash(),
+					Method: pocError.GetHeaderByHashMethod,
+				})
+			}
 		}
+
+		blockCounter++
 	}
 
 	return avgBaseTarget, header
@@ -167,14 +170,16 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc
 	}
 
 	{
-		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(8)).Div(lastBaseTarget, big.NewInt(10))
+		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(8))
+		tmpBaseTarget = tmpBaseTarget.Div(tmpBaseTarget, big.NewInt(10))
 		if newBaseTarget.Cmp(tmpBaseTarget) < 0 {
 			newBaseTarget = tmpBaseTarget
 		}
 	}
 
 	{
-		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(12)).Div(lastBaseTarget, big.NewInt(10))
+		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(12))
+		tmpBaseTarget = tmpBaseTarget.Div(tmpBaseTarget, big.NewInt(10))
 		if newBaseTarget.Cmp(tmpBaseTarget) > 0 {
 			newBaseTarget = tmpBaseTarget
 		}
