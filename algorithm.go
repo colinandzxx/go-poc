@@ -167,14 +167,14 @@ func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc
 	}
 
 	{
-		tmpBaseTarget := lastBaseTarget.Mul(lastBaseTarget, big.NewInt(8)).Div(lastBaseTarget, big.NewInt(10))
+		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(8)).Div(lastBaseTarget, big.NewInt(10))
 		if newBaseTarget.Cmp(tmpBaseTarget) < 0 {
 			newBaseTarget = tmpBaseTarget
 		}
 	}
 
 	{
-		tmpBaseTarget := lastBaseTarget.Mul(lastBaseTarget, big.NewInt(12)).Div(lastBaseTarget, big.NewInt(10))
+		tmpBaseTarget := big.NewInt(0).Mul(lastBaseTarget, big.NewInt(12)).Div(lastBaseTarget, big.NewInt(10))
 		if newBaseTarget.Cmp(tmpBaseTarget) > 0 {
 			newBaseTarget = tmpBaseTarget
 		}
