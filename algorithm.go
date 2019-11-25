@@ -134,7 +134,7 @@ func CalculateAvgBaseTarget(chain consensus.ChainReader, from consensus.Header, 
 }
 
 func CalculateBaseTarget(chain consensus.ChainReader, prev consensus.Header, poc *Poc) *big.Int  {
-	if prev.GetHeight() < uint64(poc.AvgBaseTargetNum) {
+	if prev.GetHeight() <= uint64(poc.AvgBaseTargetNum) {
 		return big.NewInt(0).SetUint64(poc.MaxBaseTarget)
 	}
 
