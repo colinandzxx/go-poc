@@ -24,7 +24,7 @@ import "testing"
 
 func Test_plotPoC1(t *testing.T) {
 	var plotter SimplePlotter
-	plotter.PlotPoC1(1, 1)
+	plotter.PlotPoC1(1, 0)
 	t.Logf("nonce: %x\n", plotter.data)
 }
 
